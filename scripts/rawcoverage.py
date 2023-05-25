@@ -1,10 +1,12 @@
 import argparse
+
 import concurrent.futures as cf
+import matplotlib.pyplot as plt
+import numpy as np
 # import multiprocessing as mp
 import pandas as pd
-import numpy as np
 import seaborn as sns
-import matplotlib.pyplot as plt
+
 plt.switch_backend('agg')
 from functools import partial
 from os import path as opath
@@ -22,19 +24,18 @@ def main():
         # return pd.concat([i for i in executor.map(process_reads, files)], ignore_index=True)
         df = pd.concat([i for i in executor.map(process_reads, files)], ignore_index=True)
         data_out.write("Reads: {length}\n"
-        "Bases: {nbases}\n"
-        "Mean read length: {rmean}\n"
-        "Median: {rmdeian}\n"
-        "Max: {rmax}\n"
-        "Min: {rmin}\n"
-        "N50: {n50}".\
-        format(length=len(df), nbases=np.sum(df["lengths"]), rmean=np.mean(df["lengths"]), \
-        rmdeian=np.median(df["lengths"]),
-        rmax=np.max(df["lengths"]),
-        rmin=np.min(df["lengths"]),
-        n50=get_N50(np.sort(df['lengths']))
-        ))
-
+                       "Bases: {nbases}\n"
+                       "Mean read length: {rmean}\n"
+                       "Median: {rmdeian}\n"
+                       "Max: {rmax}\n"
+                       "Min: {rmin}\n"
+                       "N50: {n50}". \
+                       format(length=len(df), nbases=np.sum(df["lengths"]), rmean=np.mean(df["lengths"]),
+                              rmdeian=np.median(df["lengths"]),
+                              rmax=np.max(df["lengths"]),
+                              rmin=np.min(df["lengths"]),
+                              n50=get_N50(np.sort(df['lengths']))
+                              ))
 
         plot_output = opath.join(opath.dirname(args.output), ntpath.basename(args.output).rsplit(".", 1)[0] + ".png")
         sns.set()
@@ -48,18 +49,18 @@ def main():
 def get_args():
     parser = argparse.ArgumentParser(epilog="%(prog)s version 0.01. use command -h for more info.",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description='Calulate statistics form fasta, fastq, fasta.gz and fastq.gz files ',
+                                     description='Calulate statitics form fasta, fastq, fasta.gz and fastq.gz files ',
                                      add_help=True, )
 
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 0.01')
 
     parser.add_argument("-i", "--input", nargs="+",
-                               help="<Required> one or more reads file ex: -i 1.fasta -i 2.fasta .... or -i 1.fasta  2.fasta",
-                               action="append", required=True, metavar="FOO.fasta/q/gz")
-    parser.add_argument("-o", "--output", help="<Required> output statistics file", metavar="FOO.txt")
+                        help="<Required> one or more reads file ex: -i 1.fasta -i 2.fasta .... or -i 1.fasta  2.fasta",
+                        action="append", required=True, metavar="FOO.fasta/q/gz")
+    parser.add_argument("-o", "--output", help="<Required> output statitics file", metavar="FOO.txt")
 
     parser.add_argument("-t", "--threads", type=int, metavar='N', default=1,
-                               help="<Optional> Number of threads default %(default)d")
+                        help="<Optional> Number of threads default %(default)d")
 
     args = parser.parse_args()
 
@@ -73,21 +74,23 @@ def flat_list(my_list):
     """
     return [element for each_list in my_list for element in each_list]
 
+
 def process_reads(read_file):
     file_handle, file_type = open_handle(read_file)
-    return(pd.DataFrame(
+    return (pd.DataFrame(
         data=[len(rec) for rec in SeqIO.parse(file_handle, file_type)],
         columns=["lengths"]).dropna())
 
+
 def open_handle(myfile):
     if opath.isfile(myfile):
-        if myfile.endswith(('fastq.gz', 'fq.gz')):
+        if myfile.endswith('fastq.gz'):
             import gzip
             return gzip.open(myfile, 'rt'), "fastq"
         elif myfile.endswith('fasta.gz'):
             import gzip
             return gzip.open(myfile, 'rt'), "fasta"
-        elif myfile.endswith('.fasta',):
+        elif myfile.endswith('.fasta', ):
             return open(myfile, 'r'), 'fasta'
         elif myfile.endswith('.fastq'):
             return open(myfile, 'r'), 'fastq'
@@ -111,8 +114,10 @@ def open_handle(myfile):
     else:
         sys.exit("This file {} does not exist.".format(myfile))
 
+
 def get_N50(read_lengths):
     return read_lengths[np.where(np.cumsum(read_lengths) >= 0.5 * np.sum(read_lengths))[0][0]]
+
 
 if __name__ == "__main__":
     main()
